@@ -1,0 +1,398 @@
+{
+  "name": "CampusAid UPTC - Enrutamiento de solicitudes",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## CampusAid UPTC · Flujo N8N\n**Webhook POST** → valida correo **@uptc.edu.co** → enruta por **tipo_tramite** → **notifica por correo** → responde JSON al frontend.\n\nEl registro ya lo guarda el frontend en Supabase, por eso este flujo NO inserta (evita duplicados).",
+        "height": 140,
+        "width": 700,
+        "color": 4
+      },
+      "id": "a1000000-0000-4000-8000-000000000001",
+      "name": "Nota general",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-60, -220]
+    },
+    {
+      "parameters": {
+        "content": "### 1. Entrada y validación\nRecibe el POST del formulario y rechaza correos que no sean @uptc.edu.co (responde 400).",
+        "height": 260,
+        "width": 380,
+        "color": 5
+      },
+      "id": "a1000000-0000-4000-8000-000000000002",
+      "name": "Nota entrada",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-60, 180]
+    },
+    {
+      "parameters": {
+        "content": "### 2. Enrutamiento por tipo de trámite\nSwitch por `tipo_tramite` (Tutoría / Laboratorio / Certificado). Cada rama asigna la coordinación responsable.\n\n⚠️ Cambia los correos `@example.com` por los reales de cada coordinador.",
+        "height": 460,
+        "width": 480,
+        "color": 6
+      },
+      "id": "a1000000-0000-4000-8000-000000000003",
+      "name": "Nota enrutamiento",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [400, -20]
+    },
+    {
+      "parameters": {
+        "content": "### 3. Notificación y respuesta\nEnvía correo al estudiante (con copia al coordinador) y devuelve `{status, clasificacion, id}` al frontend.",
+        "height": 260,
+        "width": 420,
+        "color": 7
+      },
+      "id": "a1000000-0000-4000-8000-000000000004",
+      "name": "Nota notificación",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [900, 100]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "campusaid",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "b2000000-0000-4000-8000-000000000001",
+      "name": "Webhook CampusAid",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 300],
+      "webhookId": "c3000000-0000-4000-8000-0000000000aa"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d4000000-0000-4000-8000-000000000001",
+              "leftValue": "={{ $json.body.email_institucional }}",
+              "rightValue": "@uptc.edu.co",
+              "operator": {
+                "type": "string",
+                "operation": "endsWith"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b2000000-0000-4000-8000-000000000002",
+      "name": "Validar correo UPTC",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e5000000-0000-4000-8000-000000000001",
+                    "leftValue": "={{ $json.body.tipo_tramite }}",
+                    "rightValue": "Tutoría",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Tutoría"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e5000000-0000-4000-8000-000000000002",
+                    "leftValue": "={{ $json.body.tipo_tramite }}",
+                    "rightValue": "Laboratorio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Laboratorio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e5000000-0000-4000-8000-000000000003",
+                    "leftValue": "={{ $json.body.tipo_tramite }}",
+                    "rightValue": "Certificado",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Certificado"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b2000000-0000-4000-8000-000000000003",
+      "name": "Switch tipo_tramite",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [480, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f6000000-0000-4000-8000-000000000001",
+              "name": "clasificacion",
+              "value": "Tutoría",
+              "type": "string"
+            },
+            {
+              "id": "f6000000-0000-4000-8000-000000000002",
+              "name": "coordinacion",
+              "value": "Coordinación de Tutorías Académicas",
+              "type": "string"
+            },
+            {
+              "id": "f6000000-0000-4000-8000-000000000003",
+              "name": "coordinador_email",
+              "value": "coordinador.tutorias@example.com",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "b2000000-0000-4000-8000-000000000004",
+      "name": "Asignar Tutoría",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [720, 60]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f6000000-0000-4000-8000-000000000004",
+              "name": "clasificacion",
+              "value": "Laboratorio",
+              "type": "string"
+            },
+            {
+              "id": "f6000000-0000-4000-8000-000000000005",
+              "name": "coordinacion",
+              "value": "Coordinación de Laboratorios",
+              "type": "string"
+            },
+            {
+              "id": "f6000000-0000-4000-8000-000000000006",
+              "name": "coordinador_email",
+              "value": "coordinador.laboratorios@example.com",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "b2000000-0000-4000-8000-000000000005",
+      "name": "Asignar Laboratorio",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [720, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f6000000-0000-4000-8000-000000000007",
+              "name": "clasificacion",
+              "value": "Certificado",
+              "type": "string"
+            },
+            {
+              "id": "f6000000-0000-4000-8000-000000000008",
+              "name": "coordinacion",
+              "value": "Secretaría Académica (Certificados)",
+              "type": "string"
+            },
+            {
+              "id": "f6000000-0000-4000-8000-000000000009",
+              "name": "coordinador_email",
+              "value": "secretaria.academica@example.com",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "b2000000-0000-4000-8000-000000000006",
+      "name": "Asignar Certificado",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [720, 340]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $json.body.email_institucional }}",
+        "subject": "=CampusAid UPTC · Solicitud de {{ $json.clasificacion }} recibida (#{{ String($json.body.id).slice(0, 8) }})",
+        "emailType": "html",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:560px\"><h2 style=\"background:#0a0a0a;color:#f5c300;padding:14px 18px;margin:0\">CampusAid UPTC</h2><div style=\"border:1px solid #ddd;padding:18px\"><p>Hola <b>{{ $json.body.estudiante_nombre }}</b>,</p><p>Recibimos tu solicitud y fue enrutada a <b>{{ $json.coordinacion }}</b>.</p><ul><li><b>Trámite:</b> {{ $json.clasificacion }}</li><li><b>Asignatura / Laboratorio:</b> {{ $json.body.asignatura_o_lab }}</li><li><b>Código:</b> {{ $json.body.codigo_uptc }}</li><li><b>Estado:</b> {{ $json.body.estado || 'Pendiente' }}</li><li><b>Radicado:</b> #{{ String($json.body.id).slice(0, 8) }}</li></ul><p><b>Descripción:</b><br>{{ $json.body.descripcion }}</p><p style=\"color:#666;font-size:12px\">Puedes consultar el estado de tu trámite en el panel de CampusAid.</p></div></div>",
+        "options": {
+          "ccList": "={{ $json.coordinador_email }}",
+          "appendAttribution": false
+        }
+      },
+      "id": "b2000000-0000-4000-8000-000000000007",
+      "name": "Notificar por correo",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [960, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"ok\", \"clasificacion\": $('Webhook CampusAid').item.json.body.tipo_tramite, \"id\": $('Webhook CampusAid').item.json.body.id } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "b2000000-0000-4000-8000-000000000008",
+      "name": "Responder OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1180, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"error\", \"message\": \"El correo debe ser institucional (@uptc.edu.co).\" } }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "b2000000-0000-4000-8000-000000000009",
+      "name": "Responder error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [480, 520]
+    }
+  ],
+  "connections": {
+    "Webhook CampusAid": {
+      "main": [
+        [
+          { "node": "Validar correo UPTC", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Validar correo UPTC": {
+      "main": [
+        [
+          { "node": "Switch tipo_tramite", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Responder error", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Switch tipo_tramite": {
+      "main": [
+        [
+          { "node": "Asignar Tutoría", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Asignar Laboratorio", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Asignar Certificado", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Asignar Tutoría": {
+      "main": [
+        [
+          { "node": "Notificar por correo", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Asignar Laboratorio": {
+      "main": [
+        [
+          { "node": "Notificar por correo", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Asignar Certificado": {
+      "main": [
+        [
+          { "node": "Notificar por correo", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Notificar por correo": {
+      "main": [
+        [
+          { "node": "Responder OK", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
